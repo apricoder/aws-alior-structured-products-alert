@@ -8,7 +8,7 @@ export default {
     {
       http: {
         method: "post",
-        path: "hello",
+        path: "/snapshot-products",
         request: {
           schemas: {
             "application/json": schema,
