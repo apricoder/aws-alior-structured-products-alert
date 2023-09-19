@@ -25,6 +25,7 @@
     "json-schema-to-ts": "^1.5.0",
     "prettier": "^3.0.3",
     "serverless": "^3.0.0",
+    "serverless-add-api-key": "^4.2.1",
     "serverless-esbuild": "^1.23.3",
     "ts-node": "^10.4.0",
     "tsconfig-paths": "^3.9.0",
