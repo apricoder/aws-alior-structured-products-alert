@@ -13,6 +13,7 @@ export default {
             'application/json': schema,
           },
         },
+        private: true,
       },
     },
   ],
