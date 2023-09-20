@@ -1,5 +1,7 @@
 ![Tests](https://github.com/apricoder/aws-alior-structured-products-alert/actions/workflows/node.js.yml/badge.svg)
 
+![Branches](./badges/badge-branches.svg) ![Functions](./badges/badge-functions.svg) ![Lines](./badges/badge-lines.svg) ![Lines](./badges/badge-statements.svg)
+
 # Serverless - AWS Node.js Typescript
 
 This project has been generated using the `aws-nodejs-typescript` template from the [Serverless framework](https://www.serverless.com/).
