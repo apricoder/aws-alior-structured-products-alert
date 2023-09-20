@@ -11,7 +11,7 @@ import { pl } from "date-fns/locale";
 import TelegramBot from "node-telegram-bot-api";
 import { Db, MongoClient } from "mongodb";
 import {
-  scrapeAndCombineOfferDetailsUrl,
+  scrapeOfferDetailsUrl,
   scrapeInterestRate,
   scrapeMinAmountAndCurrency,
   scrapeValidUntilDate,
@@ -93,7 +93,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       const { minAmount, currency } =
         scrapeMinAmountAndCurrency(featureElements);
 
-      const detailsUrl = scrapeAndCombineOfferDetailsUrl(productElement, url);
+      const detailsUrl = scrapeOfferDetailsUrl(productElement, url);
 
       console.log(Array(15).join("-"));
       console.log(" Product name: ", productName);

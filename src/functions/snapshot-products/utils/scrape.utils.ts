@@ -48,7 +48,7 @@ export const scrapeMinAmountAndCurrency = (
   return { minAmount, currency };
 };
 
-export const scrapeAndCombineOfferDetailsUrl = (
+export const scrapeOfferDetailsUrl = (
   productElement: HTMLElement,
   url: string,
 ): string => {
