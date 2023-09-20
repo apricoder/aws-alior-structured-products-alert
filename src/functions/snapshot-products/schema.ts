@@ -1,4 +1,6 @@
 export default {
   type: "object",
-  properties: {},
+  properties: {
+    force_notify: { type: 'boolean' }
+  },
 } as const;

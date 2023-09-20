@@ -7,8 +7,13 @@ import * as console from "console";
 import { getConnectedMongoClient } from "../../common/mongo/client";
 import fetch from "node-fetch";
 import { parse as parseHtml } from "node-html-parser";
-import { parse as parseDate } from "date-fns";
+import {
+  parse as parseDate,
+  format as formatDate,
+  compareAsc as compareDatesAsc,
+} from "date-fns";
 import { pl } from "date-fns/locale";
+import TelegramBot from "node-telegram-bot-api";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -16,9 +21,22 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const { client, db } = await getConnectedMongoClient();
 
   const url = process.env.SCRAPE_URL;
+  const tgToken = process.env.TG_BOT_TOKEN;
+  const tgChatId = process.env.TG_CHAT_ID;
+
   if (!url) {
     throw new Error("Broken config. Setup real SCRAPE_URL env variable");
   }
+
+  if (!tgToken) {
+    throw new Error("Broken config. Setup real TG_BOT_TOKEN env variable");
+  }
+
+  if (!tgChatId) {
+    throw new Error("Broken config. Setup real TG_CHAT_ID env variable");
+  }
+
+  const bot = new TelegramBot(tgToken);
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -102,8 +120,78 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       products,
     });
 
+    const [previousSnapshot] = await db
+      .collection("product-snapshots")
+      .find(
+        { scrapedAt: { $lt: scrapedAt } },
+        {
+          sort: { scrapedAt: -1 },
+        },
+      )
+      .limit(1)
+      .toArray();
+
+    const previousProducts = previousSnapshot.products;
+
+    let changesInProductsOffer = false;
+    for (const newProduct of products) {
+      const identicalOldProduct = previousProducts.find(
+        (oldProduct) =>
+          oldProduct.productName === newProduct.productName &&
+          oldProduct.currency === newProduct.currency &&
+          oldProduct.interestRate === newProduct.interestRate &&
+          oldProduct.minAmount === newProduct.minAmount &&
+          compareDatesAsc(
+            oldProduct.validUntilDate,
+            newProduct.validUntilDate,
+          ) === 0,
+      );
+
+      if (!identicalOldProduct) {
+        changesInProductsOffer = true;
+        break;
+      }
+    }
+
+    const notifyOnTelegram =
+      changesInProductsOffer || event.body.force_notify === true;
+    if (notifyOnTelegram) {
+      let message =
+        `⚡️ *Zmiany w ofercie produktów strukturyzowanych*:\n\n` +
+        products
+          .map((p) => {
+            const formattedDate = formatDate(p.validUntilDate, "dd MMMM yyyy", {
+              locale: pl,
+            });
+
+            const interestText = `${p.interestRate.toLocaleString("fr-FR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}%`;
+
+            const minAmountText = p.minAmount.toLocaleString("fr-FR", {
+              style: "decimal",
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            });
+
+            return (
+              `▪️ *${p.productName}*\n` +
+              `• ${interestText} w ${p.currency}\n` +
+              `• Minimalna wartość inwestycji: ${minAmountText} ${p.currency}\n` +
+              `• Oferta ważna do ${formattedDate}\n` +
+              `• [Zobacz szczegóły](${p.detailsUrl})\n`
+            );
+          })
+          .join(`\n`) +
+        `\n📌 [Pełna oferta](${url})`;
+
+      await bot.sendMessage(tgChatId, message, { parse_mode: "MarkdownV2" });
+    }
+
+    const telegramText = notifyOnTelegram ? ` Sent Telegram notification` : ``;
     return formatJSONResponse({
-      message: `Scraped ${products.length} products based on the page state at ${scrapedAt}`,
+      message: `Scraped ${products.length} products based on the page state at ${scrapedAt}.${telegramText}`,
       event,
     });
   } catch (e) {
