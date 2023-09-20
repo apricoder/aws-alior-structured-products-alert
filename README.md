@@ -17,11 +17,6 @@ Depending on your preferred package manager, follow the instructions below to de
 - Run `npm i` to install the project dependencies
 - Run `npx sls deploy` to deploy this stack to AWS
 
-### Using Yarn
-
-- Run `yarn` to install the project dependencies
-- Run `yarn sls deploy` to deploy this stack to AWS
-
 ## Test your service
 
 This template contains a single lambda function triggered by an HTTP request made on the provisioned API Gateway REST API `/hello` route with `POST` method. The request body must be provided as `application/json`. The body structure is tested by API Gateway against `src/functions/hello/schema.ts` JSON-Schema definition: it must contain the `name` property.
