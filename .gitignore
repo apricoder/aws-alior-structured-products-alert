@@ -10,3 +10,6 @@ jspm_packages
 
 # esbuild directories
 .esbuild
+
+# coverage results
+coverage
