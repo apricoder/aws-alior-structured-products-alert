@@ -19,7 +19,7 @@ export default {
     },
     {
       schedule: {
-        rate: "cron(30 17 * * ? *)"
+        rate: "cron(0 8 * * ? *)" // 10 am polish time
       }
     }
   ],
