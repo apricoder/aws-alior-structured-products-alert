@@ -93,17 +93,17 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       minAmount,
       currency,
       detailsUrl,
-      scrapedAt,
     };
   });
 
   try {
-    const insertProductsResult = await db
-      .collection("product-snapshots")
-      .insertMany(products);
+    await db.collection("product-snapshots").insertOne({
+      scrapedAt,
+      products,
+    });
 
     return formatJSONResponse({
-      message: `Scraped ${insertProductsResult.insertedCount} products based on the page state at ${scrapedAt}`,
+      message: `Scraped ${products.length} products based on the page state at ${scrapedAt}`,
       event,
     });
   } catch (e) {
