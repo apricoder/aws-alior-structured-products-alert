@@ -57,7 +57,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
     );
     const interestRateRegex = /oprocentowanie\s(\d+,\d+)%/;
     const interestRateMatch = interestRateRegex.exec(
-      interestRateFeatureElement.innerText.replaceAll("&nbsp;", " "),
+      interestRateFeatureElement.innerText.replace(/&nbsp;/g, " "),
     );
     const interestRate = parseFloat(interestRateMatch[1].replace(",", "."));
 
@@ -69,15 +69,16 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
     const minAmountRegex = /([\d\s,.]+)\s+(\w+)/;
     const minAmounMatches = minAmountRegex.exec(minAmountString);
     const minAmount = parseFloat(
-      minAmounMatches[1].replaceAll(" ", "").replaceAll(",", ""),
+      minAmounMatches[1].replace(/\s/g, "").replace(/,/, ""),
     );
     const currency = minAmounMatches[2];
 
     const detailsLink = productElement.querySelector("a");
     const detailsRelativeUrl = detailsLink.getAttribute("href");
-    const detailsUrl = new URL(process.env.SCRAPE_URL).origin + detailsRelativeUrl;
+    const detailsUrl =
+      new URL(process.env.SCRAPE_URL).origin + detailsRelativeUrl;
 
-    console.log(Array(15).join('-'));
+    console.log(Array(15).join("-"));
     console.log(" Product name: ", productName);
     console.log(" Valid until: ", validUntilDate);
     console.log(" Interest rate: ", interestRate);
@@ -96,9 +97,11 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
     };
   });
 
-
   try {
-    const insertProductsResult = await db.collection("product-snapshots").insertMany(products)
+    const insertProductsResult = await db
+      .collection("product-snapshots")
+      .insertMany(products);
+
     return formatJSONResponse({
       message: `Scraped ${insertProductsResult.insertedCount} products based on the page state at ${scrapedAt}`,
       event,
