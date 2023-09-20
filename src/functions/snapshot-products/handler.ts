@@ -131,7 +131,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       .limit(1)
       .toArray();
 
-    const previousProducts = previousSnapshot.products;
+    const previousProducts = previousSnapshot?.products ?? [];
 
     let changesInProductsOffer = false;
     for (const newProduct of products) {
