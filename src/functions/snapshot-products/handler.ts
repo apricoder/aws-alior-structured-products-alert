@@ -7,11 +7,7 @@ import * as console from "console";
 import { getConnectedMongoClient } from "../../common/mongo/client";
 import fetch from "node-fetch";
 import { parse as parseHtml } from "node-html-parser";
-import {
-  parse as parseDate,
-  format as formatDate,
-  compareAsc as compareDatesAsc,
-} from "date-fns";
+import { format as formatDate, parse as parseDate } from "date-fns";
 import { pl } from "date-fns/locale";
 import TelegramBot from "node-telegram-bot-api";
 
@@ -141,10 +137,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
           oldProduct.currency === newProduct.currency &&
           oldProduct.interestRate === newProduct.interestRate &&
           oldProduct.minAmount === newProduct.minAmount &&
-          compareDatesAsc(
-            oldProduct.validUntilDate,
-            newProduct.validUntilDate,
-          ) === 0,
+          oldProduct.validUntilDate.getTime() ===
+            newProduct.validUntilDate.getTime(),
       );
 
       if (!identicalOldProduct) {
