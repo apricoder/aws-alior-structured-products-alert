@@ -6,10 +6,16 @@ import * as console from "console";
 import { getConnectedMongoClient } from "../../common/mongo/client";
 import fetch from "node-fetch";
 import { parse as parseHtml } from "node-html-parser";
-import { format as formatDate, parse as parseDate } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { pl } from "date-fns/locale";
 import TelegramBot from "node-telegram-bot-api";
 import { Db, MongoClient } from "mongodb";
+import {
+  scrapeAndCombineOfferDetailsUrl,
+  scrapeInterestRate,
+  scrapeMinAmountAndCurrency,
+  scrapeValidUntilDate,
+} from "@functions/snapshot-products/utils/scrape.utils";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -82,43 +88,12 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
         ".features .row .columns",
       );
 
-      const validUntilFeatureElement = featureElements.find(
-        (fe) => fe.innerText.indexOf("dostępny do") > -1,
-      );
-      const validUntilPolishDateString =
-        validUntilFeatureElement.querySelector("strong").innerText;
-      const validUntilDate = parseDate(
-        validUntilPolishDateString.replace(" r.", ""),
-        "d MMMM yyyy",
-        new Date(),
-        { locale: pl },
-      );
+      const validUntilDate = scrapeValidUntilDate(featureElements);
+      const interestRate = scrapeInterestRate(featureElements);
+      const { minAmount, currency } =
+        scrapeMinAmountAndCurrency(featureElements);
 
-      const interestRateFeatureElement = featureElements.find(
-        (fe) => fe.innerText.indexOf("oprocentowanie") > -1,
-      );
-      const interestRateRegex = /oprocentowanie\s(\d+,\d+)%/;
-      const interestRateMatch = interestRateRegex.exec(
-        interestRateFeatureElement.innerText.replace(/&nbsp;/g, " "),
-      );
-      const interestRate = parseFloat(interestRateMatch[1].replace(",", "."));
-
-      const minAmountFeatureElement = featureElements.find(
-        (fe) => fe.innerText.indexOf("minimalna wartość") > -1,
-      );
-      const minAmountString =
-        minAmountFeatureElement.querySelector("strong").innerText;
-      const minAmountRegex = /([\d\s,.]+)\s+(\w+)/;
-      const minAmounMatches = minAmountRegex.exec(minAmountString);
-      const minAmount = parseFloat(
-        minAmounMatches[1].replace(/\s/g, "").replace(/,/, ""),
-      );
-      const currency = minAmounMatches[2];
-
-      const detailsLink = productElement.querySelector("a");
-      const detailsRelativeUrl = detailsLink.getAttribute("href");
-      const detailsUrl =
-        new URL(process.env.SCRAPE_URL).origin + detailsRelativeUrl;
+      const detailsUrl = scrapeAndCombineOfferDetailsUrl(productElement, url);
 
       console.log(Array(15).join("-"));
       console.log(" Product name: ", productName);
@@ -138,11 +113,9 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       };
     });
   } catch (e) {
-    await bot.sendMessage(
-      tgChatId,
-      `Fix me 🔧🥲 Error at parsing products`,
-      { parse_mode: "MarkdownV2" },
-    );
+    await bot.sendMessage(tgChatId, `Fix me 🔧🥲 Error at parsing products`, {
+      parse_mode: "MarkdownV2",
+    });
 
     throw e;
   }
@@ -168,9 +141,9 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       const [previousSnapshot] = await db
         .collection("product-snapshots")
         .find(
-          {scrapedAt: {$lt: scrapedAt}},
+          { scrapedAt: { $lt: scrapedAt } },
           {
-            sort: {scrapedAt: -1},
+            sort: { scrapedAt: -1 },
           },
         )
         .limit(1)
@@ -186,7 +159,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
             oldProduct.interestRate === newProduct.interestRate &&
             oldProduct.minAmount === newProduct.minAmount &&
             oldProduct.validUntilDate.getTime() ===
-            newProduct.validUntilDate.getTime(),
+              newProduct.validUntilDate.getTime(),
         );
 
         if (!identicalOldProduct) {
