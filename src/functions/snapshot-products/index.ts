@@ -17,5 +17,10 @@ export default {
         private: true,
       },
     },
+    {
+      schedule: {
+        rate: "cron(30 17 * * ? *)"
+      }
+    }
   ],
 } as FunctionSchema;

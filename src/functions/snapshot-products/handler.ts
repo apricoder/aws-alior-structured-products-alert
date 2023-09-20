@@ -1,6 +1,5 @@
 import type { ValidatedEventAPIGatewayProxyEvent } from "@libs/api-gateway";
 import { formatJSONResponse } from "@libs/api-gateway";
-import { middyfy } from "@libs/lambda";
 
 import schema from "./schema";
 import * as console from "console";
@@ -148,7 +147,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
     }
 
     const notifyOnTelegram =
-      changesInProductsOffer || event.body.force_notify === true;
+      changesInProductsOffer || event.body?.force_notify === true;
     if (notifyOnTelegram) {
       let message =
         `⚡️ *Zmiany w ofercie produktów strukturyzowanych*:\n\n` +
@@ -195,4 +194,4 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   }
 };
 
-export const main = middyfy(shapshotProducts);
+export const main = shapshotProducts;
