@@ -1,4 +1,4 @@
-export const parseBody = (event: { body: string | unknown }) => {
+export const parseBody = (event: { body?: string }) => {
   if (typeof event.body !== 'string') {
     return {};
   }
