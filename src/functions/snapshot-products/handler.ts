@@ -7,38 +7,32 @@ import { getConnectedMongoClient } from "../../common/mongo/client";
 import fetch from "node-fetch";
 import { format as formatDate } from "date-fns";
 import { pl } from "date-fns/locale";
-import TelegramBot from "node-telegram-bot-api";
 import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
+import { TelegramService } from "../../common/telegram/telegram.service";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
 > = async (event) => {
   const config = getAppConfig(process.env);
-  const bot = new TelegramBot(config.tgToken);
+  const telegramService = new TelegramService(config);
 
   let client: MongoClient, db: Db;
   try {
     ({ client, db } = await getConnectedMongoClient(config));
   } catch (e) {
-    await bot.sendMessage(
-      config.tgChatId,
+    await telegramService.sendMessage(
       `Fix me 🔧🥲 Error at connecting to the database`,
-      { parse_mode: "MarkdownV2" },
     );
-
     throw e;
   }
 
   const response = await fetch(config.url);
   if (!response.ok) {
     const errorText = await response.text();
-
-    await bot.sendMessage(
-      config.tgChatId,
+    await telegramService.sendMessage(
       `Fix me 🔧🥲 Request to scrape url failed with status ${response.status}`,
-      { parse_mode: "MarkdownV2" },
     );
 
     throw new Error(
@@ -48,7 +42,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const scrapedAt = new Date();
 
   const html = await response.text();
-  const products = await scrapeProducts(html, bot, config.tgChatId);
+  const products = await scrapeProducts(html, telegramService);
 
   try {
     try {
@@ -57,10 +51,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
         products,
       });
     } catch (e) {
-      await bot.sendMessage(
-        config.tgChatId,
+      await telegramService.sendMessage(
         `Fix me 🔧🥲 Error saving current products snapshot`,
-        { parse_mode: "MarkdownV2" },
       );
 
       throw e;
@@ -98,10 +90,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
         }
       }
     } catch (e) {
-      await bot.sendMessage(
-        config.tgChatId,
+      await telegramService.sendMessage(
         `Fix me 🔧🥲 Error at analyzing previous snapshot`,
-        { parse_mode: "MarkdownV2" },
       );
 
       throw e;
@@ -140,9 +130,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
           .join(`\n`) +
         `\n📌 [Pełna oferta](${config.url})`;
 
-      await bot.sendMessage(config.tgChatId, message, {
-        parse_mode: "MarkdownV2",
-      });
+      await telegramService.sendMessage(message);
     }
 
     const telegramText = notifyOnTelegram ? ` Sent Telegram notification` : ``;

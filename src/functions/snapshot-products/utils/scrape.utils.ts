@@ -1,9 +1,9 @@
 import { HTMLElement, parse as parseHtml } from "node-html-parser";
 import { parse as parseDate } from "date-fns";
 import { pl } from "date-fns/locale";
-import TelegramBot from "node-telegram-bot-api";
 import { logProduct } from "./logging.utils";
 import { Product } from "../types/product.type";
+import { TelegramService } from "src/common/telegram/telegram.service";
 
 export const scrapeValidUntilDate = (featureElements: HTMLElement[]): Date => {
   const validUntilFeatureElement = featureElements.find(
@@ -64,8 +64,7 @@ export const scrapeOfferDetailsUrl = (
 
 export const scrapeProducts = async (
   rawHtml: string,
-  bot: TelegramBot, // replace with telegram service
-  tgChatId: string,
+  telegramService: TelegramService,
 ): Promise<Product[]> => {
   // breaks in test env, replace with a service which takes ready config as a param
   const url = process.env.SCRAPE_URL; // replace with config validation
@@ -104,9 +103,7 @@ export const scrapeProducts = async (
       return product;
     });
   } catch (e) {
-    await bot.sendMessage(tgChatId, `Fix me 🔧🥲 Error at parsing products`, {
-      parse_mode: "MarkdownV2",
-    });
+    await telegramService.sendMessage(`Fix me 🔧🥲 Error at parsing products`);
 
     throw e;
   }
