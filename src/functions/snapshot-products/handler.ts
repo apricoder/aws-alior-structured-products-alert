@@ -5,22 +5,23 @@ import schema from "./schema";
 import * as console from "console";
 import { getConnectedMongoClient } from "../../common/mongo/client";
 import fetch from "node-fetch";
-import { format as formatDate } from "date-fns";
-import { pl } from "date-fns/locale";
 import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
 import { TelegramService } from "../../common/telegram/telegram.service";
 import { ProductsService } from "./services/products.service";
+import { ProductMessageService } from "@functions/snapshot-products/services/product-message.service";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
 > = async (event) => {
   const config = getAppConfig(process.env);
   const telegramService = new TelegramService(config);
+  const productMessageService = new ProductMessageService(config);
 
   // todo extract to util
-  const body = typeof event.body === 'string' ? JSON.parse(event.body) : undefined;
+  const body =
+    typeof event.body === "string" ? JSON.parse(event.body) : undefined;
   const forceNotify = body?.force_notify;
 
   let client: MongoClient;
@@ -47,10 +48,10 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       `Request to scrape url failed with status ${response.status}: ${errorText}`,
     );
   }
-  const scrapedAt = new Date();
 
   const html = await response.text();
   const products = await scrapeProducts(html, telegramService);
+  const scrapedAt = new Date();
 
   try {
     await productService.saveProductsSnapshot({ products, scrapedAt });
@@ -61,36 +62,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
 
     const notifyOnTelegram = didProductsChange || forceNotify === true;
     if (notifyOnTelegram) {
-      const message =
-        `⚡️ *Zmiany w ofercie produktów strukturyzowanych*:\n\n` +
-        products
-          .map((p) => {
-            const formattedDate = formatDate(p.validUntilDate, "dd MMMM yyyy", {
-              locale: pl,
-            });
-
-            const interestText = `${p.interestRate.toLocaleString("fr-FR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}%`;
-
-            const minAmountText = p.minAmount.toLocaleString("fr-FR", {
-              style: "decimal",
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            });
-
-            return (
-              `▪️ *${p.productName}*\n` +
-              `• ${interestText} w ${p.currency}\n` +
-              `• Minimalna wartość inwestycji: ${minAmountText} ${p.currency}\n` +
-              `• Oferta ważna do ${formattedDate}\n` +
-              `• [Zobacz szczegóły](${p.detailsUrl})\n`
-            );
-          })
-          .join(`\n`) +
-        `\n📌 [Pełna oferta](${config.url})`;
-
+      const message = productMessageService.prepareOfferUpdateMessage(products);
       await telegramService.sendMessage(message);
     }
 
