@@ -10,33 +10,37 @@ export class ProductMessageService {
     const message =
       `⚡️ *Zmiany w ofercie produktów strukturyzowanych*:\n\n` +
       products
-        .map((p) => {
-          const formattedDate = formatDate(p.validUntilDate, "dd MMMM yyyy", {
-            locale: pl,
-          });
-
-          const interestText = `${p.interestRate.toLocaleString("fr-FR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}%`;
-
-          const minAmountText = p.minAmount.toLocaleString("fr-FR", {
-            style: "decimal",
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          });
-
-          return (
-            `▪️ *${p.productName}*\n` +
-            `• ${interestText} w ${p.currency}\n` +
-            `• Minimalna wartość inwestycji: ${minAmountText} ${p.currency}\n` +
-            `• Oferta ważna do ${formattedDate}\n` +
-            `• [Zobacz szczegóły](${p.detailsUrl})\n`
-          );
+        .map((product) => {
+          return this.getProductSummary(product);
         })
         .join(`\n`) +
       `\n📌 [Pełna oferta](${this.config.url})`;
 
     return message;
+  }
+
+  public getProductSummary(p: Product) {
+    const formattedDate = formatDate(p.validUntilDate, "dd MMMM yyyy", {
+      locale: pl,
+    });
+
+    const interestText = `${p.interestRate.toLocaleString("fr-FR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}%`;
+
+    const minAmountText = p.minAmount.toLocaleString("fr-FR", {
+      style: "decimal",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    return (
+      `▪️ *${p.productName}*\n` +
+      `• ${interestText} w ${p.currency}\n` +
+      `• Minimalna wartość inwestycji: ${minAmountText} ${p.currency}\n` +
+      `• Oferta ważna do ${formattedDate}\n` +
+      `• [Zobacz szczegóły](${p.detailsUrl})\n`
+    );
   }
 }
