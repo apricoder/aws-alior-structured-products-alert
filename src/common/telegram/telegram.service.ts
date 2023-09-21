@@ -13,4 +13,8 @@ export class TelegramService {
       parse_mode: "MarkdownV2",
     });
   }
+
+  sendErrorMessage(text: string): Promise<Message> {
+    return this.sendMessage(`Fix me 🔧🥲 ${text}`);
+  }
 }

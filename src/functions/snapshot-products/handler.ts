@@ -23,8 +23,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   try {
     ({ client, db } = await getConnectedMongoClient(config));
   } catch (e) {
-    await telegramService.sendMessage(
-      `Fix me 🔧🥲 Error at connecting to the database`,
+    await telegramService.sendErrorMessage(
+      `Error at connecting to the database`,
     );
     throw e;
   }
@@ -32,8 +32,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const response = await fetch(config.url);
   if (!response.ok) {
     const errorText = await response.text();
-    await telegramService.sendMessage(
-      `Fix me 🔧🥲 Request to scrape url failed with status ${response.status}`,
+    await telegramService.sendErrorMessage(
+      `Request to scrape url failed with status ${response.status}`,
     );
 
     throw new Error(
@@ -52,8 +52,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
         products,
       });
     } catch (e) {
-      await telegramService.sendMessage(
-        `Fix me 🔧🥲 Error saving current products snapshot`,
+      await telegramService.sendErrorMessage(
+        `Error saving current products snapshot`,
       );
 
       throw e;
@@ -75,8 +75,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       const previousProducts = previousSnapshot?.products ?? [];
       changesInProductsOffer = didProductsChange(previousProducts, products);
     } catch (e) {
-      await telegramService.sendMessage(
-        `Fix me 🔧🥲 Error at analyzing previous snapshot`,
+      await telegramService.sendErrorMessage(
+        `Error at analyzing previous snapshot`,
       );
 
       throw e;
