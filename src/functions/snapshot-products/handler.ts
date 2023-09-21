@@ -34,7 +34,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       scrapedAt,
     );
 
-    const { force_notify } = parseBody(event);
+    const { force_notify } = parseBody(event as unknown);
     const notifyOnTelegram = didProductsChange || force_notify === true;
     if (notifyOnTelegram) {
       const message = productMessageService.prepareOfferUpdateMessage(products);
