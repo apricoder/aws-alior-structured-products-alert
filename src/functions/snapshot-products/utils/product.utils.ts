@@ -13,3 +13,23 @@ export const findIdenticalProduct = (
       oldProduct.validUntilDate.getTime() === product.validUntilDate.getTime(),
   );
 };
+
+export const didProductsChange = (
+  oldProducts: Product[],
+  newProducts: Product[],
+): boolean => {
+  // if amount of products changed - products changed
+  if (oldProducts.length !== newProducts.length) {
+    return true;
+  }
+
+  // otherwise check if every new product existed before
+  for (const newProduct of newProducts) {
+    const identicalOldProduct = findIdenticalProduct(newProduct, oldProducts);
+    if (!identicalOldProduct) {
+      return true;
+    }
+  }
+
+  return false;
+};

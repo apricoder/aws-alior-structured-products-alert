@@ -11,7 +11,7 @@ import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
 import { TelegramService } from "../../common/telegram/telegram.service";
-import { findIdenticalProduct } from "./utils/product.utils";
+import { didProductsChange } from "./utils/product.utils";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -73,18 +73,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
         .toArray();
 
       const previousProducts = previousSnapshot?.products ?? [];
-
-      for (const newProduct of products) {
-        const identicalOldProduct = findIdenticalProduct(
-          newProduct,
-          previousProducts,
-        );
-
-        if (!identicalOldProduct) {
-          changesInProductsOffer = true;
-          break;
-        }
-      }
+      changesInProductsOffer = didProductsChange(previousProducts, products);
     } catch (e) {
       await telegramService.sendMessage(
         `Fix me 🔧🥲 Error at analyzing previous snapshot`,
