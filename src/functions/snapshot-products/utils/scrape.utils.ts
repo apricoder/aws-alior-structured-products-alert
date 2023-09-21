@@ -1,6 +1,8 @@
-import { HTMLElement } from "node-html-parser";
+import { HTMLElement, parse as parseHtml } from "node-html-parser";
 import { parse as parseDate } from "date-fns";
 import { pl } from "date-fns/locale";
+import TelegramBot from "node-telegram-bot-api";
+import { logProduct } from "@functions/snapshot-products/utils/logging.utils";
 
 export const scrapeValidUntilDate = (featureElements: HTMLElement[]): Date => {
   const validUntilFeatureElement = featureElements.find(
@@ -57,4 +59,53 @@ export const scrapeOfferDetailsUrl = (
   const detailsUrl = new URL(url).origin + detailsRelativeUrl;
 
   return detailsUrl;
+};
+
+export const scrapeProducts = async (
+  rawHtml: string,
+  bot: TelegramBot, // replace with telegram service
+  tgChatId: string,
+) => {
+  const url = process.env.SCRAPE_URL; // replace with config validation
+  if (!url) {
+    throw new Error("Broken config. Setup real SCRAPE_URL env variable");
+  }
+
+  const root = parseHtml(rawHtml);
+
+  const productsListElements = root.querySelectorAll(".product-list");
+
+  try {
+    return productsListElements.map((productElement) => {
+      const productName = productElement.querySelector("h2").innerText.trim();
+      const featureElements = productElement.querySelectorAll(
+        ".features .row .columns",
+      );
+
+      const validUntilDate = scrapeValidUntilDate(featureElements);
+      const interestRate = scrapeInterestRate(featureElements);
+      const { minAmount, currency } =
+        scrapeMinAmountAndCurrency(featureElements);
+      const detailsUrl = scrapeOfferDetailsUrl(productElement, url);
+
+      const product = {
+        productName,
+        validUntilDate,
+        interestRate,
+        minAmount,
+        currency,
+        detailsUrl,
+      };
+
+      logProduct(product);
+
+      return product;
+    });
+  } catch (e) {
+    await bot.sendMessage(tgChatId, `Fix me 🔧🥲 Error at parsing products`, {
+      parse_mode: "MarkdownV2",
+    });
+
+    throw e;
+  }
 };

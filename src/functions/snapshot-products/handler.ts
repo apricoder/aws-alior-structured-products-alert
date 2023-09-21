@@ -5,17 +5,11 @@ import schema from "./schema";
 import * as console from "console";
 import { getConnectedMongoClient } from "../../common/mongo/client";
 import fetch from "node-fetch";
-import { parse as parseHtml } from "node-html-parser";
 import { format as formatDate } from "date-fns";
 import { pl } from "date-fns/locale";
 import TelegramBot from "node-telegram-bot-api";
 import { Db, MongoClient } from "mongodb";
-import {
-  scrapeOfferDetailsUrl,
-  scrapeInterestRate,
-  scrapeMinAmountAndCurrency,
-  scrapeValidUntilDate,
-} from "@functions/snapshot-products/utils/scrape.utils";
+import { scrapeProducts } from "@functions/snapshot-products/utils/scrape.utils";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -65,60 +59,10 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       `Request to scrape url failed with status ${response.status}: ${errorText}`,
     );
   }
-
-  const rawHtml = await response.text();
-  const root = parseHtml(rawHtml);
   const scrapedAt = new Date();
 
-  const productsListElements = root.querySelectorAll(".product-list");
-
-  let products: {
-    interestRate: number;
-    minAmount: number;
-    detailsUrl: string;
-    currency: string;
-    validUntilDate: Date;
-    productName: string;
-  }[];
-
-  try {
-    products = productsListElements.map((productElement) => {
-      const productName = productElement.querySelector("h2").innerText.trim();
-      const featureElements = productElement.querySelectorAll(
-        ".features .row .columns",
-      );
-
-      const validUntilDate = scrapeValidUntilDate(featureElements);
-      const interestRate = scrapeInterestRate(featureElements);
-      const { minAmount, currency } =
-        scrapeMinAmountAndCurrency(featureElements);
-
-      const detailsUrl = scrapeOfferDetailsUrl(productElement, url);
-
-      console.log(Array(15).join("-"));
-      console.log(" Product name: ", productName);
-      console.log(" Valid until: ", validUntilDate);
-      console.log(" Interest rate: ", interestRate);
-      console.log(" Min amount: ", minAmount);
-      console.log(" Currency: ", currency);
-      console.log(" Details Url: ", detailsUrl);
-
-      return {
-        productName,
-        validUntilDate,
-        interestRate,
-        minAmount,
-        currency,
-        detailsUrl,
-      };
-    });
-  } catch (e) {
-    await bot.sendMessage(tgChatId, `Fix me 🔧🥲 Error at parsing products`, {
-      parse_mode: "MarkdownV2",
-    });
-
-    throw e;
-  }
+  const html = await response.text();
+  const products = await scrapeProducts(html, bot, tgChatId);
 
   try {
     try {
