@@ -1,5 +1,6 @@
 import type { ValidatedEventAPIGatewayProxyEvent } from "@libs/api-gateway";
 import { formatJSONResponse } from "@libs/api-gateway";
+import fetch from "node-fetch";
 
 import schema from "./schema";
 import { getAppConfig } from "src/common/config/config.utils";
@@ -23,7 +24,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const { db } = await mongoConnectionService.connect();
   const productService = new ProductsService(db, telegramService);
   const productMessageService = new ProductMessageService(config);
-  const scrapeService = new ScrapeService(config, telegramService);
+  const scrapeService = new ScrapeService(fetch, config, telegramService);
 
   try {
     const products = await scrapeService.scrapeProducts();
