@@ -1,16 +1,14 @@
 import type { ValidatedEventAPIGatewayProxyEvent } from "@libs/api-gateway";
 import { formatJSONResponse } from "@libs/api-gateway";
+import fetch from "node-fetch";
 
 import schema from "./schema";
-import * as console from "console";
-import { getConnectedMongoClient } from "../../common/mongo/client";
-import fetch from "node-fetch";
-import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
-import { getAppConfig } from "../../common/config/config.utils";
-import { TelegramService } from "../../common/telegram/telegram.service";
+import { getAppConfig } from "src/common/config/config.utils";
+import { TelegramService } from "src/common/telegram/telegram.service";
 import { ProductsService } from "./services/products.service";
-import { ProductMessageService } from "@functions/snapshot-products/services/product-message.service";
+import { ProductMessageService } from "./services/product-message.service";
+import { MongoConnectionService } from "src/common/mongo/mongo-connection.service";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -18,23 +16,17 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const config = getAppConfig(process.env);
   const telegramService = new TelegramService(config);
   const productMessageService = new ProductMessageService(config);
+  const mongoConnectionService = new MongoConnectionService(
+    config,
+    telegramService,
+  );
 
   // todo extract to util
   const body =
     typeof event.body === "string" ? JSON.parse(event.body) : undefined;
   const forceNotify = body?.force_notify;
 
-  let client: MongoClient;
-  let db: Db;
-  try {
-    ({ client, db } = await getConnectedMongoClient(config));
-  } catch (e) {
-    await telegramService.sendErrorMessage(
-      `Error at connecting to the database`,
-    );
-    throw e;
-  }
-
+  const { db } = await mongoConnectionService.connect();
   const productService = new ProductsService(db, telegramService);
 
   const response = await fetch(config.url);
@@ -74,7 +66,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   } catch (e) {
     console.dir(e);
   } finally {
-    await client.close();
+    await mongoConnectionService.closeConnection();
   }
 };
 
