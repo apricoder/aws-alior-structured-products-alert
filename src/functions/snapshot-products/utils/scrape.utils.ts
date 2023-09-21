@@ -2,7 +2,8 @@ import { HTMLElement, parse as parseHtml } from "node-html-parser";
 import { parse as parseDate } from "date-fns";
 import { pl } from "date-fns/locale";
 import TelegramBot from "node-telegram-bot-api";
-import { logProduct } from "@functions/snapshot-products/utils/logging.utils";
+import { logProduct } from "./logging.utils";
+import { Product } from "../types/product.type";
 
 export const scrapeValidUntilDate = (featureElements: HTMLElement[]): Date => {
   const validUntilFeatureElement = featureElements.find(
@@ -65,7 +66,8 @@ export const scrapeProducts = async (
   rawHtml: string,
   bot: TelegramBot, // replace with telegram service
   tgChatId: string,
-) => {
+): Promise<Product[]> => {
+  // breaks in test env, replace with a service which takes ready config as a param
   const url = process.env.SCRAPE_URL; // replace with config validation
   if (!url) {
     throw new Error("Broken config. Setup real SCRAPE_URL env variable");
