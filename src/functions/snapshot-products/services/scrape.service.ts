@@ -27,6 +27,6 @@ export class ScrapeService {
     const html = await response.text();
 
     // todo move scrapeProducts util inside this service
-    return await scrapeProducts(html, this.telegramService);
+    return await scrapeProducts(html, this.config, this.telegramService);
   }
 }

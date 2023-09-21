@@ -1,9 +1,11 @@
 import { HTMLElement, parse as parseHtml } from "node-html-parser";
 import { parse as parseDate } from "date-fns";
 import { pl } from "date-fns/locale";
+
+import { TelegramService } from "src/common/telegram/telegram.service";
+import { Config } from "src/common/config/config.type";
 import { logProduct } from "./logging.utils";
 import { Product } from "../types/product.type";
-import { TelegramService } from "src/common/telegram/telegram.service";
 
 export const scrapeValidUntilDate = (featureElements: HTMLElement[]): Date => {
   const validUntilFeatureElement = featureElements.find(
@@ -64,14 +66,9 @@ export const scrapeOfferDetailsUrl = (
 
 export const scrapeProducts = async (
   rawHtml: string,
+  config: Config,
   telegramService: TelegramService,
 ): Promise<Product[]> => {
-  // breaks in test env, replace with a service which takes ready config as a param
-  const url = process.env.SCRAPE_URL; // replace with config validation
-  if (!url) {
-    throw new Error("Broken config. Setup real SCRAPE_URL env variable");
-  }
-
   const root = parseHtml(rawHtml);
 
   const productsListElements = root.querySelectorAll(".product-list");
@@ -87,7 +84,7 @@ export const scrapeProducts = async (
       const interestRate = scrapeInterestRate(featureElements);
       const { minAmount, currency } =
         scrapeMinAmountAndCurrency(featureElements);
-      const detailsUrl = scrapeOfferDetailsUrl(productElement, url);
+      const detailsUrl = scrapeOfferDetailsUrl(productElement, config.url);
 
       const product = {
         productName,
