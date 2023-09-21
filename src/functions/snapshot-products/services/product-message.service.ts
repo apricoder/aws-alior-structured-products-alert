@@ -7,19 +7,18 @@ export class ProductMessageService {
   constructor(private readonly config: Config) {}
 
   prepareOfferUpdateMessage(products: Product[]): string {
-    const message =
+    return (
       `⚡️ *Zmiany w ofercie produktów strukturyzowanych*:\n\n` +
       products
         .map((product) => {
           return this.getProductSummary(product);
         })
         .join(`\n`) +
-      `\n📌 [Pełna oferta](${this.config.url})`;
-
-    return message;
+      `\n📌 [Pełna oferta](${this.config.url})`
+    );
   }
 
-  public getProductSummary(p: Product) {
+  getProductSummary(p: Product) {
     const formattedDate = formatDate(p.validUntilDate, "dd MMMM yyyy", {
       locale: pl,
     });
