@@ -1,4 +1,4 @@
-import { didProductsChange, findIdenticalProduct } from "./product.utils";
+import { areProductsDifferent, findIdenticalProduct } from "./product.utils";
 import { Product } from "../types/product.type";
 
 describe("Product Utils", () => {
@@ -69,35 +69,35 @@ describe("Product Utils", () => {
     });
   });
 
-  describe("didProductsChange", () => {
+  describe("areProductsDifferent", () => {
     it("should return false if products are the same", () => {
       const oldProducts = [plnProduct, usdProduct];
       const newProducts = [plnProduct, usdProduct];
-      expect(didProductsChange(oldProducts, newProducts)).toBeFalsy();
+      expect(areProductsDifferent(oldProducts, newProducts)).toBeFalsy();
     });
 
     it("should return false if only order differs", () => {
       const oldProducts = [plnProduct, usdProduct];
       const newProducts = [usdProduct, plnProduct];
-      expect(didProductsChange(oldProducts, newProducts)).toBeFalsy();
+      expect(areProductsDifferent(oldProducts, newProducts)).toBeFalsy();
     });
 
     it("should return true if amount of products is less than it was", () => {
       const oldProducts = [plnProduct, usdProduct];
       const newProducts = [usdProduct];
-      expect(didProductsChange(oldProducts, newProducts)).toBeTruthy();
+      expect(areProductsDifferent(oldProducts, newProducts)).toBeTruthy();
     });
 
     it("should return true if amount of products is bigger than it was", () => {
       const oldProducts = [usdProduct];
       const newProducts = [plnProduct, usdProduct];
-      expect(didProductsChange(oldProducts, newProducts)).toBeTruthy();
+      expect(areProductsDifferent(oldProducts, newProducts)).toBeTruthy();
     });
 
     it("should return true if some product changed", () => {
       const oldProducts = [plnProduct, usdProduct];
       const newProducts = [plnProduct, { ...usdProduct, currency: "EUR" }];
-      expect(didProductsChange(oldProducts, newProducts)).toBeTruthy();
+      expect(areProductsDifferent(oldProducts, newProducts)).toBeTruthy();
     });
   });
 });

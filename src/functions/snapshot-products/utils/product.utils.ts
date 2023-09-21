@@ -14,7 +14,7 @@ export const findIdenticalProduct = (
   );
 };
 
-export const didProductsChange = (
+export const areProductsDifferent = (
   oldProducts: Product[],
   newProducts: Product[],
 ): boolean => {

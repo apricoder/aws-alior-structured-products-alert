@@ -11,7 +11,7 @@ import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
 import { TelegramService } from "../../common/telegram/telegram.service";
-import { didProductsChange } from "./utils/product.utils";
+import { areProductsDifferent } from "./utils/product.utils";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -73,7 +73,7 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
         .toArray();
 
       const previousProducts = previousSnapshot?.products ?? [];
-      changesInProductsOffer = didProductsChange(previousProducts, products);
+      changesInProductsOffer = areProductsDifferent(previousProducts, products);
     } catch (e) {
       await telegramService.sendErrorMessage(
         `Error at analyzing previous snapshot`,
