@@ -1,7 +1,8 @@
 import { Db } from "mongodb";
 import { TelegramService } from "src/common/telegram/telegram.service";
 import { ProductSnapshot } from "../types/product-snapshot.type";
-import { Product } from "@functions/snapshot-products/types/product.type";
+import { Product } from "../types/product.type";
+import { areProductsDifferent } from "../utils/product.utils";
 
 export class ProductsService {
   private readonly collectionName = "product-snapshots";
@@ -18,6 +19,22 @@ export class ProductsService {
       await this.telegramService.sendErrorMessage(
         `Error saving current products snapshot`,
       );
+      throw e;
+    }
+  }
+
+  async didProductsChangeSinceDate(
+    newProducts: Product[],
+    date: Date,
+  ): Promise<boolean> {
+    try {
+      const previousProducts = await this.getLastProductsBeforeDate(date);
+      return areProductsDifferent(previousProducts, newProducts);
+    } catch (e) {
+      await this.telegramService.sendErrorMessage(
+        `Error at analyzing previous snapshot`,
+      );
+
       throw e;
     }
   }

@@ -11,7 +11,6 @@ import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
 import { TelegramService } from "../../common/telegram/telegram.service";
-import { areProductsDifferent } from "./utils/product.utils";
 import { ProductsService } from "./services/products.service";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
@@ -19,6 +18,10 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
 > = async (event) => {
   const config = getAppConfig(process.env);
   const telegramService = new TelegramService(config);
+
+  // todo extract to util
+  const body = typeof event.body === 'string' ? JSON.parse(event.body) : undefined;
+  const forceNotify = body?.force_notify;
 
   let client: MongoClient;
   let db: Db;
@@ -51,22 +54,12 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
 
   try {
     await productService.saveProductsSnapshot({ products, scrapedAt });
+    const didProductsChange = await productService.didProductsChangeSinceDate(
+      products,
+      scrapedAt,
+    );
 
-    let changesInProductsOffer = false;
-    try {
-      const previousProducts =
-        await productService.getLastProductsBeforeDate(scrapedAt);
-      changesInProductsOffer = areProductsDifferent(previousProducts, products);
-    } catch (e) {
-      await telegramService.sendErrorMessage(
-        `Error at analyzing previous snapshot`,
-      );
-
-      throw e;
-    }
-
-    const notifyOnTelegram =
-      changesInProductsOffer || event.body?.force_notify === true;
+    const notifyOnTelegram = didProductsChange || forceNotify === true;
     if (notifyOnTelegram) {
       const message =
         `⚡️ *Zmiany w ofercie produktów strukturyzowanych*:\n\n` +

@@ -1,5 +1,7 @@
 import { Product } from "../types/product.type";
 
+// todo move to product service
+
 export const findIdenticalProduct = (
   product: Product,
   existingProducts: Product[],
