@@ -12,6 +12,7 @@ import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
 import { TelegramService } from "../../common/telegram/telegram.service";
 import { areProductsDifferent } from "./utils/product.utils";
+import { ProductsService } from "./services/products.service";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -19,7 +20,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const config = getAppConfig(process.env);
   const telegramService = new TelegramService(config);
 
-  let client: MongoClient, db: Db;
+  let client: MongoClient;
+  let db: Db;
   try {
     ({ client, db } = await getConnectedMongoClient(config));
   } catch (e) {
@@ -28,6 +30,8 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
     );
     throw e;
   }
+
+  const productService = new ProductsService(db, telegramService);
 
   const response = await fetch(config.url);
   if (!response.ok) {
@@ -46,33 +50,12 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   const products = await scrapeProducts(html, telegramService);
 
   try {
-    try {
-      await db.collection("product-snapshots").insertOne({
-        scrapedAt,
-        products,
-      });
-    } catch (e) {
-      await telegramService.sendErrorMessage(
-        `Error saving current products snapshot`,
-      );
-
-      throw e;
-    }
+    await productService.saveProductsSnapshot({ products, scrapedAt });
 
     let changesInProductsOffer = false;
     try {
-      const [previousSnapshot] = await db
-        .collection("product-snapshots")
-        .find(
-          { scrapedAt: { $lt: scrapedAt } },
-          {
-            sort: { scrapedAt: -1 },
-          },
-        )
-        .limit(1)
-        .toArray();
-
-      const previousProducts = previousSnapshot?.products ?? [];
+      const previousProducts =
+        await productService.getLastProductsBeforeDate(scrapedAt);
       changesInProductsOffer = areProductsDifferent(previousProducts, products);
     } catch (e) {
       await telegramService.sendErrorMessage(
