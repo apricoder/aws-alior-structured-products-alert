@@ -11,6 +11,7 @@ import { Db, MongoClient } from "mongodb";
 import { scrapeProducts } from "./utils/scrape.utils";
 import { getAppConfig } from "../../common/config/config.utils";
 import { TelegramService } from "../../common/telegram/telegram.service";
+import { findIdenticalProduct } from "./utils/product.utils";
 
 const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
   typeof schema
@@ -74,14 +75,9 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       const previousProducts = previousSnapshot?.products ?? [];
 
       for (const newProduct of products) {
-        const identicalOldProduct = previousProducts.find(
-          (oldProduct) =>
-            oldProduct.productName === newProduct.productName &&
-            oldProduct.currency === newProduct.currency &&
-            oldProduct.interestRate === newProduct.interestRate &&
-            oldProduct.minAmount === newProduct.minAmount &&
-            oldProduct.validUntilDate.getTime() ===
-              newProduct.validUntilDate.getTime(),
+        const identicalOldProduct = findIdenticalProduct(
+          newProduct,
+          previousProducts,
         );
 
         if (!identicalOldProduct) {
