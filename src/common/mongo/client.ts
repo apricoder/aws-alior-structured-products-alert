@@ -1,29 +1,13 @@
 import { Db, MongoClient, ServerApiVersion } from "mongodb";
+import { Config } from "../config/config.type";
 
-export const getConnectedMongoClient = async (): Promise<{
+export const getConnectedMongoClient = async (
+  config: Config,
+): Promise<{
   client: MongoClient;
   db: Db;
 }> => {
-  const mongoUserName = process.env.MONGO_USERNAME;
-  const mongoPassword = process.env.MONGO_PASSWORD;
-  const mongoClusterUrl = process.env.MONGO_CLUSTER_URL;
-  const mongoDbName = process.env.MONGO_DB_NAME;
-
-  if (!mongoUserName) {
-    throw new Error("Broken config. Setup real MONGO_USERNAME env variable");
-  }
-
-  if (!mongoPassword) {
-    throw new Error("Broken config. Setup real MONGO_PASSWORD env variable");
-  }
-
-  if (!mongoClusterUrl) {
-    throw new Error("Broken config. Setup real MONGO_CLUSTER_URL env variable");
-  }
-
-  if (!mongoDbName) {
-    throw new Error("Broken config. Setup real MONGO_DB_NAME env variable");
-  }
+  const { mongoUserName, mongoPassword, mongoClusterUrl, mongoDbName } = config;
 
   const uri = `mongodb+srv://${mongoUserName}:${mongoPassword}@${mongoClusterUrl}/?retryWrites=true&w=majority`;
   const client = new MongoClient(uri, {
