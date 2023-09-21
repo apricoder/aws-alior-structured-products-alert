@@ -15,14 +15,15 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
 > = async (event) => {
   const config = getAppConfig(process.env);
   const telegramService = new TelegramService(config);
-  const productMessageService = new ProductMessageService(config);
-  const scrapeService = new ScrapeService(config, telegramService);
   const mongoConnectionService = new MongoConnectionService(
     config,
     telegramService,
   );
+
   const { db } = await mongoConnectionService.connect();
   const productService = new ProductsService(db, telegramService);
+  const productMessageService = new ProductMessageService(config);
+  const scrapeService = new ScrapeService(config, telegramService);
 
   try {
     const products = await scrapeService.scrapeProducts();
