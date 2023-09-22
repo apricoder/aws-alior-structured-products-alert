@@ -41,7 +41,7 @@ There are few ways to run the app:
   - `sls offline`
 
 Keep in mind Serverless is fully dependent on AWS, and since it won't work locally 100% like in deployed environment 
-it is a good idea to deploy and tests on AWS early on. 
+it is a good idea to deploy and test on AWS early on. 
 
 ## Deploy
 Make sure you have AWS CLI configured and logged in, and then run:
