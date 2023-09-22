@@ -62,7 +62,9 @@ describe("ScrapeService", () => {
       const scrapeService = createScrapeService(fetch);
 
       await expect(scrapeService.scrapeProducts()).rejects.toThrow();
-      expect(telegramService.sendErrorMessage).toHaveBeenCalledWith(`Request to scrape url failed with status ${errorResponse.status}`);
+      expect(telegramService.sendErrorMessage).toHaveBeenCalledWith(
+        `Request to scrape url failed with status ${errorResponse.status}`,
+      );
     });
 
     it("should return scraped products if request succeeded", async () => {
