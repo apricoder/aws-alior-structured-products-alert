@@ -22,7 +22,7 @@ describe("ScrapeService", () => {
 
   beforeEach(() => {
     config = {
-      url: "https://some-domain/interesting-page",
+      url: "https://bank.com/interesting-page",
     } as Config;
 
     telegramService = {
@@ -84,6 +84,112 @@ describe("ScrapeService", () => {
         <a href="/some-relative-path"></a>
       </div>
     `);
+
+    describe("extractProductsFromHtml", () => {
+      it("should be defined", () => {
+        expect(scrapeService.extractProductsFromHtml).toBeDefined();
+      });
+
+      it("should reject and send error message to telegram in case of extracting error", async () => {
+        const html = `
+          <html>
+            <body>
+              <div class="product-list"></div>
+              <div class="product-list"></div>
+            </body>
+          </html>
+        `;
+
+        scrapeService.extractValidUntilDate = jest
+          .fn()
+          .mockImplementation(() => {
+            throw new Error("Some error during extracting");
+          });
+
+        await expect(
+          scrapeService.extractProductsFromHtml(html),
+        ).rejects.toThrow();
+
+        expect(telegramService.sendErrorMessage).toHaveBeenCalledWith(
+          `Error at extracting products`,
+        );
+      });
+
+      it('should extract products from html', async () => {
+        const html = `
+          <html>
+            <body>
+              <!-- PLN 4.6% product -->
+              <section class="product-list">
+                <h2>Legit Deal</h2>
+                <div class="features">
+                  <div class="row">
+                    <div class="columns">
+                      dostępny do<br>
+                      <strong>29 września 2023 r.</strong>
+                    </div>
+                    <div class="columns">
+                      <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie <strong>4,60%</strong> w skali roku.  
+                    </div>
+                    <div class="columns">
+                      minimalna wartość początkowa inwestycji:<br>
+                      <strong>5 000 PLN</strong>:<br>
+                      (50 szt. BPW)
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="columns">
+                      <a href="/legit-deal"></a>
+                    </div>
+                  </div>  
+                </div>
+              </section>
+              <section class="product-list">
+                <h2>Bucks Saving</h2>
+                <div class="features">
+                  <div class="row">
+                    <div class="columns">
+                      dostępny do<br>
+                      <strong>20 października 2023 r.</strong>
+                    </div>
+                    <div class="columns">
+                      <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie <strong>3,00%</strong> w skali roku.  
+                    </div>
+                    <div class="columns">
+                      minimalna wartość początkowa inwestycji:<br>
+                      <strong>5 000 USD</strong>:<br>
+                      (50 szt. BPW)
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="columns">
+                      <a href="/bucks-savings"></a>
+                    </div>
+                  </div>  
+                </div>
+              </section>
+            </body>
+          </html>
+        `;
+
+        const productsFromHtml = await scrapeService.extractProductsFromHtml(html);
+        expect(productsFromHtml).toEqual([{
+          productName: "Legit Deal",
+          interestRate: 4.6,
+          currency: "PLN",
+          minAmount: 5000,
+          validUntilDate: new Date("2023-09-29"),
+          detailsUrl: "https://bank.com/legit-deal",
+        }, {
+          productName: "Bucks Saving",
+          interestRate: 3,
+          currency: "USD",
+          minAmount: 5000,
+          validUntilDate: new Date("2023-10-20"),
+          detailsUrl: "https://bank.com/bucks-savings",
+        }])
+      });
+    });
 
     describe("extractOfferDetailsUrl", () => {
       it("should be defined", () => {

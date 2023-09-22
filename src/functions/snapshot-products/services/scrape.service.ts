@@ -66,7 +66,7 @@ export class ScrapeService {
         return product;
       });
     } catch (e) {
-      await this.telegramService.sendErrorMessage(`Error at parsing products`);
+      await this.telegramService.sendErrorMessage(`Error at extracting products`);
       throw e;
     }
   }
