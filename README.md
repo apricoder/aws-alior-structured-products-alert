@@ -2,6 +2,14 @@
 
 ![Branches](./badges/badge-branches.svg) ![Functions](./badges/badge-functions.svg) ![Lines](./badges/badge-lines.svg) ![Lines](./badges/badge-statements.svg)
 
+## About Project
+This project's aim is to notify about savings offer change from [Alior Bank](https://www.aliorbank.pl/klienci-indywidualni/inwestycje/produkty-strukturyzowane.html).
+
+- A lambda function scraper requests offer page once a day 
+- Extracts current product offer
+- Compares to the previous offer (from a day before)
+- If there is a change in Bank's offer it sends a notification to a Telegram channel
+
 ## Prerequisites
 Before we start make sure you have: 
 - **Telegram API token** - [example tutorial](https://github.com/hosein2398/node-telegram-bot-api-tutorial#creating-new-bot-with-botfather) 
