@@ -78,14 +78,21 @@ describe("ScrapeService", () => {
     });
   });
 
-  describe("extractOfferDetailsUrl", () => {
-    it("should be defined", () => {
-      expect(scrapeService.extractOfferDetailsUrl).toBeDefined();
-    });
+  describe("extracting data from hmtl", () => {
+    const detailsLinkFeatureElement = parseHtml(`
+      <div class="columns">
+        <a href="/some-relative-path"></a>
+      </div>
+    `);
 
-    it("should scrape details url from a link button", () => {
-      const url = "https://origin.com/current-path";
-      const productElement = parseHtml(`
+    describe("extractOfferDetailsUrl", () => {
+      it("should be defined", () => {
+        expect(scrapeService.extractOfferDetailsUrl).toBeDefined();
+      });
+
+      it("should scrape details url from a link button", () => {
+        const url = "https://origin.com/current-path";
+        const productElement = parseHtml(`
         <section class="product-list">
           <div class="features">
             <div class="rows">
@@ -97,50 +104,111 @@ describe("ScrapeService", () => {
         </section>
       `);
 
-      const result = scrapeService.extractOfferDetailsUrl(productElement, url);
-      expect(result).toEqual("https://origin.com/some-relative-path");
-    });
-  });
-
-  describe("extractInterestRate", () => {
-    const irrelevantFeatureElement = parseHtml(`
-      <div class="columns">
-        <a href="/some-relative-path"></a>
-      </div>
-    `);
-
-    it("should be defined", () => {
-      expect(scrapeService.extractInterestRate).toBeDefined();
+        const result = scrapeService.extractOfferDetailsUrl(
+          productElement,
+          url,
+        );
+        expect(result).toEqual("https://origin.com/some-relative-path");
+      });
     });
 
-    it("should extract interest rate", () => {
-      const featureElements = [
-        irrelevantFeatureElement,
-        parseHtml(`
-          <div class="columns">
-            <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie <strong>4,60%</strong> w skali roku.  
-          </div>
-        `),
-        irrelevantFeatureElement,
-      ];
+    describe("extractInterestRate", () => {
+      it("should be defined", () => {
+        expect(scrapeService.extractInterestRate).toBeDefined();
+      });
 
-      const interestRate = scrapeService.extractInterestRate(featureElements);
-      expect(interestRate).toEqual(4.6);
+      it("should extract interest rate", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie <strong>4,60%</strong> w skali roku.  
+            </div>
+          `),
+          detailsLinkFeatureElement,
+        ];
+
+        const interestRate = scrapeService.extractInterestRate(featureElements);
+        expect(interestRate).toEqual(4.6);
+      });
+
+      it("should extract interest rate after &nbsp;", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie&nbsp;<strong>3,00%</strong> w skali roku.  
+            </div>
+          `),
+          detailsLinkFeatureElement,
+        ];
+
+        const interestRate = scrapeService.extractInterestRate(featureElements);
+        expect(interestRate).toEqual(3);
+      });
     });
 
-    it("should extract interest rate after &nbsp;", () => {
-      const featureElements = [
-        irrelevantFeatureElement,
-        parseHtml(`
-          <div class="columns">
-            <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie&nbsp;<strong>3,00%</strong> w skali roku.  
-          </div>
-        `),
-        irrelevantFeatureElement,
-      ];
+    describe("extractMinAmountAndCurrency", () => {
+      it("should be defined", () => {
+        expect(scrapeService.extractMinAmountAndCurrency).toBeDefined();
+      });
 
-      const interestRate = scrapeService.extractInterestRate(featureElements);
-      expect(interestRate).toEqual(3);
+      it("should extract min amount = 5 000 and currency = PLN", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              minimalna wartość początkowa inwestycji:<br>
+              <strong>5 000 PLN</strong>:<br>
+              (50 szt. BPW)
+            </div>
+          `),
+        ];
+        expect(
+          scrapeService.extractMinAmountAndCurrency(featureElements),
+        ).toEqual({
+          currency: "PLN",
+          minAmount: 5000,
+        });
+      });
+
+      it("should extract min amount = 12 500 000 and currency = EUR", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              minimalna wartość początkowa inwestycji:<br>
+              <strong>12 500 000 EUR</strong>:<br>
+              (50 szt. BPW)
+            </div>
+          `),
+        ];
+        expect(
+          scrapeService.extractMinAmountAndCurrency(featureElements),
+        ).toEqual({
+          currency: "EUR",
+          minAmount: 12500000,
+        });
+      });
+
+      it("should extract min amount = 100 and currency = USD", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              minimalna wartość początkowa inwestycji:<br>
+              <strong>100 USD</strong>:<br>
+              (50 szt. BPW)
+            </div>
+          `),
+        ];
+        expect(
+          scrapeService.extractMinAmountAndCurrency(featureElements),
+        ).toEqual({
+          currency: "USD",
+          minAmount: 100,
+        });
+      });
     });
   });
 });

@@ -100,7 +100,7 @@ export class ScrapeService {
     return interestRate;
   }
 
-  private extractMinAmountAndCurrency(featureElements: HTMLElement[]): {
+  extractMinAmountAndCurrency(featureElements: HTMLElement[]): {
     minAmount: number;
     currency: string;
   } {
