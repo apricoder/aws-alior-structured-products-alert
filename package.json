@@ -38,6 +38,7 @@
     "prettier": "^3.0.3",
     "serverless": "^3.0.0",
     "serverless-add-api-key": "^4.2.1",
+    "serverless-dotenv-plugin": "^6.0.0",
     "serverless-esbuild": "^1.23.3",
     "serverless-offline": "^12.0.4",
     "ts-jest": "^29.1.1",
