@@ -1,18 +1,20 @@
 import { TelegramService } from "src/common/telegram/telegram.service";
 import { ProductsService } from "./products.service";
 import { Db } from "mongodb";
-import { ProductSnapshot } from "@functions/snapshot-products/types/product-snapshot.type";
+import { ProductSnapshot } from "../types/product-snapshot.type";
+import { Product } from "../types/product.type";
 
 describe("ProductService", () => {
   let createProductService: (db: Db) => ProductsService;
+  let productService: ProductsService;
 
   let telegramService: TelegramService;
   let db: Db;
 
   let productSnapshot: ProductSnapshot;
+  let plnProduct: Product;
+  let usdProduct: Product;
   let date: Date;
-
-  beforeEach(() => {});
 
   beforeEach(() => {
     date = new Date("2023-09-22");
@@ -21,17 +23,24 @@ describe("ProductService", () => {
       sendErrorMessage: jest.fn(),
     } as unknown as TelegramService;
 
+    plnProduct = {
+      productName: "Legit Deal",
+      interestRate: 4.5,
+      currency: "PLN",
+      minAmount: 5000,
+      validUntilDate: new Date("2023-08-21"),
+      detailsUrl: "https://bank.com/legit-deal",
+    };
+    usdProduct = {
+      productName: "Bucks Saving",
+      interestRate: 3,
+      currency: "USD",
+      minAmount: 5000,
+      validUntilDate: new Date("2023-08-21"),
+      detailsUrl: "https://bank.com/bucks-savings",
+    };
     productSnapshot = {
-      products: [
-        {
-          productName: "Legit Deal",
-          interestRate: 4.5,
-          currency: "PLN",
-          minAmount: 5000,
-          validUntilDate: new Date("2023-08-21"),
-          detailsUrl: "https://bank.com/legit-deal",
-        },
-      ],
+      products: [plnProduct],
       scrapedAt: new Date("2023-09-22"),
     };
 
@@ -44,12 +53,15 @@ describe("ProductService", () => {
       }),
     } as unknown as Db;
 
+    // allow to override with createProductService
     createProductService = (db) => new ProductsService(db, telegramService);
+
+    // create default productService
+    productService = createProductService(db);
   });
 
   describe("saveProductsSnapshot", () => {
     it("should be defined", () => {
-      const productService = createProductService(db);
       expect(productService.saveProductsSnapshot).toBeDefined();
     });
 
@@ -57,7 +69,7 @@ describe("ProductService", () => {
       db.collection = jest.fn().mockReturnValue({
         insertOne: jest.fn().mockRejectedValue(new Error("Query Error")),
       });
-      const productService = createProductService(db);
+      productService = createProductService(db);
 
       await expect(
         productService.saveProductsSnapshot(productSnapshot),
@@ -69,8 +81,6 @@ describe("ProductService", () => {
     });
 
     it("should resolve if saved successfully", async () => {
-      const productService = createProductService(db);
-
       await expect(
         productService.saveProductsSnapshot(productSnapshot),
       ).resolves.not.toThrow();
@@ -81,13 +91,10 @@ describe("ProductService", () => {
 
   describe("getLastSnapshotBeforeDate", () => {
     it("should be defined", () => {
-      const productService = createProductService(db);
       expect(productService.getLastSnapshotBeforeDate).toBeDefined();
     });
 
     it("should query db with proper params", async () => {
-      const productService = createProductService(db);
-
       await expect(
         productService.getLastSnapshotBeforeDate(date),
       ).resolves.not.toThrow();
@@ -99,7 +106,6 @@ describe("ProductService", () => {
     });
 
     it("should return first (and only) query result", async () => {
-      const productService = createProductService(db);
       const snapshot = await productService.getLastSnapshotBeforeDate(date);
       expect(snapshot).toEqual(productSnapshot);
     });
@@ -107,12 +113,10 @@ describe("ProductService", () => {
 
   describe("getLastProductsBeforeDate", () => {
     it("should be defined", () => {
-      const productService = createProductService(db);
       expect(productService.getLastProductsBeforeDate).toBeDefined();
     });
 
     it("should return empty array if no previous snapshot", async () => {
-      const productService = createProductService(db);
       productService.getLastSnapshotBeforeDate = jest
         .fn()
         .mockResolvedValue(null);
@@ -122,7 +126,6 @@ describe("ProductService", () => {
     });
 
     it("should return products of a last snapshot", async () => {
-      const productService = createProductService(db);
       productService.getLastSnapshotBeforeDate = jest
         .fn()
         .mockResolvedValue(productSnapshot);
@@ -134,13 +137,10 @@ describe("ProductService", () => {
 
   describe("didProductsChangeSinceDate", () => {
     it("should be defined", () => {
-      const productService = createProductService(db);
       expect(productService.didProductsChangeSinceDate).toBeDefined();
     });
 
     it("should reject and send error message to telegram if failed to get last products ", async () => {
-      const productService = createProductService(db);
-
       const error = new Error("Query Error");
       productService.getLastProductsBeforeDate = jest
         .fn()
@@ -159,7 +159,6 @@ describe("ProductService", () => {
     });
 
     it(`should return false if products didn't change`, async () => {
-      const productService = createProductService(db);
       const didChange = await productService.didProductsChangeSinceDate(
         productSnapshot.products,
         date,
@@ -168,12 +167,108 @@ describe("ProductService", () => {
     });
 
     it(`should return true if products changed`, async () => {
-      const productService = createProductService(db);
       const didChange = await productService.didProductsChangeSinceDate(
         [],
         date,
       );
       expect(didChange).toEqual(true);
+    });
+  });
+
+  describe("findIdenticalProduct", () => {
+    let product: Product;
+    let existingProducts: Product[];
+
+    beforeEach(() => {
+      product = { ...plnProduct };
+      existingProducts = [{ ...plnProduct }, { ...usdProduct }];
+    });
+
+    it("should be defined", () => {
+      expect(productService.findIdenticalProduct).toBeDefined();
+    });
+
+    it(`should not match if product name differs`, () => {
+      existingProducts[0].productName = "Different Name";
+      expect(
+        productService.findIdenticalProduct(product, existingProducts),
+      ).toBeUndefined();
+    });
+
+    it(`should not match if currency differs`, () => {
+      existingProducts[0].currency = "USD";
+      expect(
+        productService.findIdenticalProduct(product, existingProducts),
+      ).toBeUndefined();
+    });
+
+    it(`should not match if min amount differs`, () => {
+      existingProducts[0].minAmount = 4000;
+      expect(
+        productService.findIdenticalProduct(product, existingProducts),
+      ).toBeUndefined();
+    });
+
+    it(`should not match if interest rate differs`, () => {
+      existingProducts[0].interestRate = 11;
+      expect(
+        productService.findIdenticalProduct(product, existingProducts),
+      ).toBeUndefined();
+    });
+
+    it(`should not match if valid until date differs`, () => {
+      existingProducts[0].validUntilDate = new Date();
+      expect(
+        productService.findIdenticalProduct(product, existingProducts),
+      ).toBeUndefined();
+    });
+
+    it("should match an identical product", () => {
+      expect(
+        productService.findIdenticalProduct(product, existingProducts),
+      ).toEqual(existingProducts[0]);
+    });
+  });
+
+  describe("areProductsDifferent", () => {
+    it("should return false if products are the same", () => {
+      const oldProducts = [plnProduct, usdProduct];
+      const newProducts = [plnProduct, usdProduct];
+      expect(
+        productService.areProductsDifferent(oldProducts, newProducts),
+      ).toEqual(false);
+    });
+
+    it("should return false if only order differs", () => {
+      const oldProducts = [plnProduct, usdProduct];
+      const newProducts = [usdProduct, plnProduct];
+      expect(
+        productService.areProductsDifferent(oldProducts, newProducts),
+      ).toEqual(false);
+    });
+
+    it("should return true if amount of products is less than it was", () => {
+      const oldProducts = [plnProduct, usdProduct];
+      const newProducts = [usdProduct];
+      expect(
+        productService.areProductsDifferent(oldProducts, newProducts),
+      ).toEqual(true);
+    });
+
+    it("should return true if amount of products is bigger than it was", () => {
+      const oldProducts = [usdProduct];
+      const newProducts = [plnProduct, usdProduct];
+      expect(
+        productService.areProductsDifferent(oldProducts, newProducts),
+      ).toEqual(true);
+    });
+
+    it("should return true if some product changed", () => {
+      const oldProducts = [plnProduct, usdProduct];
+      const newProducts = [plnProduct, { ...usdProduct, currency: "EUR" }];
+      expect(
+        productService.areProductsDifferent(oldProducts, newProducts),
+      ).toEqual(true);
     });
   });
 });

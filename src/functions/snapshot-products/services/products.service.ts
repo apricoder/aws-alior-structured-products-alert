@@ -2,7 +2,6 @@ import { Db } from "mongodb";
 import { TelegramService } from "src/common/telegram/telegram.service";
 import { ProductSnapshot } from "../types/product-snapshot.type";
 import { Product } from "../types/product.type";
-import { areProductsDifferent } from "../utils/product.utils";
 
 export class ProductsService {
   private readonly collectionName = "product-snapshots";
@@ -29,7 +28,7 @@ export class ProductsService {
   ): Promise<boolean> {
     try {
       const previousProducts = await this.getLastProductsBeforeDate(date);
-      return areProductsDifferent(previousProducts, newProducts);
+      return this.areProductsDifferent(previousProducts, newProducts);
     } catch (e) {
       await this.telegramService.sendErrorMessage(
         `Error at analyzing previous snapshot`,
@@ -37,6 +36,41 @@ export class ProductsService {
 
       throw e;
     }
+  }
+
+  areProductsDifferent(
+    oldProducts: Product[],
+    newProducts: Product[],
+  ): boolean {
+    // if amount of products changed - products changed
+    if (oldProducts.length !== newProducts.length) {
+      return true;
+    }
+
+    // otherwise check if every new product existed before
+    for (const newProduct of newProducts) {
+      const identicalOldProduct = this.findIdenticalProduct(
+        newProduct,
+        oldProducts,
+      );
+      if (!identicalOldProduct) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  findIdenticalProduct(product: Product, existingProducts: Product[]): Product {
+    return existingProducts.find(
+      (oldProduct) =>
+        oldProduct.productName === product.productName &&
+        oldProduct.currency === product.currency &&
+        oldProduct.interestRate === product.interestRate &&
+        oldProduct.minAmount === product.minAmount &&
+        oldProduct.validUntilDate.getTime() ===
+          product.validUntilDate.getTime(),
+    );
   }
 
   async getLastProductsBeforeDate(date: Date): Promise<Product[]> {
