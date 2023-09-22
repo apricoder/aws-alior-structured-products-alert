@@ -1,4 +1,5 @@
 import nodeFetch from "node-fetch";
+import { parse as parseHtml } from "node-html-parser";
 
 import { Config } from "src/common/config/config.type";
 import { TelegramService } from "src/common/telegram/telegram.service";
@@ -72,6 +73,32 @@ describe("ScrapeService", () => {
       const scrapeService = createScrapeService(fetch);
 
       await expect(scrapeService.scrapeProducts()).resolves.toEqual([]);
+    });
+  });
+
+  describe("scrapeOfferDetailsUrl", () => {
+    it("should be defined", () => {
+      const scrapeService = createScrapeService();
+      expect(scrapeService.extractOfferDetailsUrl).toBeDefined();
+    });
+
+    it("should scrape details url from a link button", () => {
+      const scrapeService = createScrapeService();
+      const url = "https://origin.com/current-path";
+      const productElement = parseHtml(`
+        <section class="product-list">
+          <div class="features">
+            <div class="rows">
+              <div class="columns">
+                <a href="/some-relative-path"></a>
+              </div>
+            </div>
+          </div>
+        </section>
+      `);
+
+      const result = scrapeService.extractOfferDetailsUrl(productElement, url);
+      expect(result).toEqual("https://origin.com/some-relative-path");
     });
   });
 });
