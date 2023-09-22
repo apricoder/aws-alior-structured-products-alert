@@ -210,5 +210,27 @@ describe("ScrapeService", () => {
         });
       });
     });
+
+    describe("extractValidUntilDate", () => {
+      it("should be defined", () => {
+        expect(scrapeService.extractValidUntilDate).toBeDefined();
+      });
+
+      it("should extract date from a html containing string date in polish", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              dostępny do<br>
+              <strong>29 września 2023 r.</strong>
+            </div>
+          `),
+        ];
+
+        const expectedDate = new Date("2023-09-29");
+        const date = scrapeService.extractValidUntilDate(featureElements);
+        expect(date).toEqual(expectedDate);
+      });
+    });
   });
 });

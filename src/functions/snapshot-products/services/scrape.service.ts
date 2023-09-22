@@ -84,6 +84,11 @@ export class ScrapeService {
       { locale: pl },
     );
 
+    // remove utc offset so that if running from a non-utc timezone would still create a utc-midnight date
+    validUntilDate.setMinutes(
+      validUntilDate.getMinutes() - validUntilDate.getTimezoneOffset(),
+    );
+
     return validUntilDate;
   }
 
@@ -118,10 +123,7 @@ export class ScrapeService {
     return { minAmount, currency };
   }
 
-  extractOfferDetailsUrl(
-    productElement: HTMLElement,
-    url: string,
-  ): string {
+  extractOfferDetailsUrl(productElement: HTMLElement, url: string): string {
     const detailsLink = productElement.querySelector("a");
     const detailsRelativeUrl = detailsLink.getAttribute("href");
     const detailsUrl = new URL(url).origin + detailsRelativeUrl;
