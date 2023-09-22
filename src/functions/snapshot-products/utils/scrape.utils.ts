@@ -100,7 +100,7 @@ export const scrapeProducts = async (
       return product;
     });
   } catch (e) {
-    await telegramService.sendMessage(`Fix me 🔧🥲 Error at parsing products`);
+    await telegramService.sendErrorMessage(`Error at parsing products`);
 
     throw e;
   }
