@@ -12,6 +12,7 @@ type Response = {
 };
 describe("ScrapeService", () => {
   let createScrapeService: (fetch?: typeof nodeFetch) => ScrapeService;
+  let scrapeService: ScrapeService;
 
   let config: Config;
   let telegramService: TelegramService;
@@ -42,17 +43,18 @@ describe("ScrapeService", () => {
 
     createScrapeService = (fetch: typeof nodeFetch = jest.fn()) =>
       new ScrapeService(fetch, config, telegramService);
+
+    scrapeService = createScrapeService();
   });
 
   describe("scrapeProducts", () => {
     it("should be defined", () => {
-      const scrapeService = createScrapeService();
       expect(scrapeService.scrapeProducts).toBeDefined();
     });
 
     it("should call fetch with url from config", async () => {
       const fetch = jest.fn().mockResolvedValue(successResponse);
-      const scrapeService = createScrapeService(fetch);
+      scrapeService = createScrapeService(fetch);
 
       await expect(scrapeService.scrapeProducts()).resolves.not.toThrow();
       expect(fetch).toHaveBeenCalledWith(config.url);
@@ -60,7 +62,7 @@ describe("ScrapeService", () => {
 
     it("should send error message on telegram if request failed", async () => {
       const fetch = jest.fn().mockResolvedValue(errorResponse);
-      const scrapeService = createScrapeService(fetch);
+      scrapeService = createScrapeService(fetch);
 
       await expect(scrapeService.scrapeProducts()).rejects.toThrow();
       expect(telegramService.sendErrorMessage).toHaveBeenCalledWith(
@@ -70,20 +72,18 @@ describe("ScrapeService", () => {
 
     it("should return scraped products if request succeeded", async () => {
       const fetch = jest.fn().mockResolvedValue(successResponse);
-      const scrapeService = createScrapeService(fetch);
+      scrapeService = createScrapeService(fetch);
 
       await expect(scrapeService.scrapeProducts()).resolves.toEqual([]);
     });
   });
 
-  describe("scrapeOfferDetailsUrl", () => {
+  describe("extractOfferDetailsUrl", () => {
     it("should be defined", () => {
-      const scrapeService = createScrapeService();
       expect(scrapeService.extractOfferDetailsUrl).toBeDefined();
     });
 
     it("should scrape details url from a link button", () => {
-      const scrapeService = createScrapeService();
       const url = "https://origin.com/current-path";
       const productElement = parseHtml(`
         <section class="product-list">
@@ -99,6 +99,48 @@ describe("ScrapeService", () => {
 
       const result = scrapeService.extractOfferDetailsUrl(productElement, url);
       expect(result).toEqual("https://origin.com/some-relative-path");
+    });
+  });
+
+  describe("extractInterestRate", () => {
+    const irrelevantFeatureElement = parseHtml(`
+      <div class="columns">
+        <a href="/some-relative-path"></a>
+      </div>
+    `);
+
+    it("should be defined", () => {
+      expect(scrapeService.extractInterestRate).toBeDefined();
+    });
+
+    it("should extract interest rate", () => {
+      const featureElements = [
+        irrelevantFeatureElement,
+        parseHtml(`
+          <div class="columns">
+            <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie <strong>4,60%</strong> w skali roku.  
+          </div>
+        `),
+        irrelevantFeatureElement,
+      ];
+
+      const interestRate = scrapeService.extractInterestRate(featureElements);
+      expect(interestRate).toEqual(4.6);
+    });
+
+    it("should extract interest rate after &nbsp;", () => {
+      const featureElements = [
+        irrelevantFeatureElement,
+        parseHtml(`
+          <div class="columns">
+            <strong>100% ochrony kapitału</strong> w Dniu Wykupu oraz oprocentowanie&nbsp;<strong>3,00%</strong> w skali roku.  
+          </div>
+        `),
+        irrelevantFeatureElement,
+      ];
+
+      const interestRate = scrapeService.extractInterestRate(featureElements);
+      expect(interestRate).toEqual(3);
     });
   });
 });
