@@ -10,6 +10,9 @@ This project's aim is to notify about savings offer change from [Alior Bank](htt
 - Compares to the previous offer (from a day before)
 - If there is a change in Bank's offer it sends a notification to a Telegram channel
 
+![image](https://github.com/apricoder/aws-alior-structured-products-alert/assets/9594646/92eb94c4-bf9d-4426-be35-734eba87b6bb)
+
+
 ## Prerequisites
 Before we start make sure you have: 
 - **Telegram API token** - [example tutorial](https://github.com/hosein2398/node-telegram-bot-api-tutorial#creating-new-bot-with-botfather) 
