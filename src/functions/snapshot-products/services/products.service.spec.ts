@@ -105,4 +105,37 @@ describe("ProductService", () => {
       expect(snapshot).toEqual(productSnapshot);
     });
   });
+
+  describe("getLastProductsBeforeDate", () => {
+    let date: Date;
+
+    beforeEach(() => {
+      date = new Date("2023-09-22");
+    });
+
+    it("should be defined", () => {
+      const productService = createProductService(db);
+      expect(productService.getLastProductsBeforeDate).toBeDefined();
+    });
+
+    it("should return empty array if no previous snapshot", async () => {
+      const productService = createProductService(db);
+      productService.getLastSnapshotBeforeDate = jest
+        .fn()
+        .mockResolvedValue(null);
+
+      const products = await productService.getLastProductsBeforeDate(date);
+      expect(products).toEqual([]);
+    });
+
+    it("should return products of a last snapshot", async () => {
+      const productService = createProductService(db);
+      productService.getLastSnapshotBeforeDate = jest
+        .fn()
+        .mockResolvedValue(productSnapshot);
+
+      const products = await productService.getLastProductsBeforeDate(date);
+      expect(products).toEqual(productSnapshot.products);
+    });
+  });
 });
