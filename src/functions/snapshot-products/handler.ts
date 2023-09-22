@@ -43,9 +43,11 @@ const shapshotProducts: ValidatedEventAPIGatewayProxyEvent<
       await telegramService.sendMessage(message);
     }
 
-    const telegramText = notifyOnTelegram ? ` Sent Telegram notification` : ``;
+    const telegramSummary = notifyOnTelegram
+      ? ` Sent Telegram notification`
+      : ``;
     return formatJSONResponse({
-      message: `Scraped ${products.length} products based on the page state at ${scrapedAt}.${telegramText}`,
+      message: `Scraped ${products.length} products based on the page state at ${scrapedAt}.${telegramSummary}`,
       event,
     });
   } catch (e) {
