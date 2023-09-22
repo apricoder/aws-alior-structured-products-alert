@@ -1,11 +1,6 @@
-import { HTMLElement, parse as parseHtml } from "node-html-parser";
+import { HTMLElement } from "node-html-parser";
 import { parse as parseDate } from "date-fns";
 import { pl } from "date-fns/locale";
-
-import { TelegramService } from "src/common/telegram/telegram.service";
-import { Config } from "src/common/config/config.type";
-import { logProduct } from "./logging.utils";
-import { Product } from "../types/product.type";
 
 export const scrapeValidUntilDate = (featureElements: HTMLElement[]): Date => {
   const validUntilFeatureElement = featureElements.find(
@@ -62,46 +57,4 @@ export const scrapeOfferDetailsUrl = (
   const detailsUrl = new URL(url).origin + detailsRelativeUrl;
 
   return detailsUrl;
-};
-
-export const scrapeProducts = async (
-  rawHtml: string,
-  config: Config,
-  telegramService: TelegramService,
-): Promise<Product[]> => {
-  const root = parseHtml(rawHtml);
-
-  const productsListElements = root.querySelectorAll(".product-list");
-
-  try {
-    return productsListElements.map((productElement) => {
-      const productName = productElement.querySelector("h2").innerText.trim();
-      const featureElements = productElement.querySelectorAll(
-        ".features .row .columns",
-      );
-
-      const validUntilDate = scrapeValidUntilDate(featureElements);
-      const interestRate = scrapeInterestRate(featureElements);
-      const { minAmount, currency } =
-        scrapeMinAmountAndCurrency(featureElements);
-      const detailsUrl = scrapeOfferDetailsUrl(productElement, config.url);
-
-      const product = {
-        productName,
-        validUntilDate,
-        interestRate,
-        minAmount,
-        currency,
-        detailsUrl,
-      };
-
-      logProduct(product);
-
-      return product;
-    });
-  } catch (e) {
-    await telegramService.sendErrorMessage(`Error at parsing products`);
-
-    throw e;
-  }
 };
