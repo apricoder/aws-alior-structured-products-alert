@@ -10,8 +10,13 @@ describe("ProductService", () => {
   let db: Db;
 
   let productSnapshot: ProductSnapshot;
+  let date: Date;
+
+  beforeEach(() => {});
 
   beforeEach(() => {
+    date = new Date("2023-09-22");
+
     telegramService = {
       sendErrorMessage: jest.fn(),
     } as unknown as TelegramService;
@@ -75,12 +80,6 @@ describe("ProductService", () => {
   });
 
   describe("getLastSnapshotBeforeDate", () => {
-    let date: Date;
-
-    beforeEach(() => {
-      date = new Date("2023-09-22");
-    });
-
     it("should be defined", () => {
       const productService = createProductService(db);
       expect(productService.getLastSnapshotBeforeDate).toBeDefined();
@@ -107,12 +106,6 @@ describe("ProductService", () => {
   });
 
   describe("getLastProductsBeforeDate", () => {
-    let date: Date;
-
-    beforeEach(() => {
-      date = new Date("2023-09-22");
-    });
-
     it("should be defined", () => {
       const productService = createProductService(db);
       expect(productService.getLastProductsBeforeDate).toBeDefined();
@@ -136,6 +129,51 @@ describe("ProductService", () => {
 
       const products = await productService.getLastProductsBeforeDate(date);
       expect(products).toEqual(productSnapshot.products);
+    });
+  });
+
+  describe("didProductsChangeSinceDate", () => {
+    it("should be defined", () => {
+      const productService = createProductService(db);
+      expect(productService.didProductsChangeSinceDate).toBeDefined();
+    });
+
+    it("should reject and send error message to telegram if failed to get last products ", async () => {
+      const productService = createProductService(db);
+
+      const error = new Error("Query Error");
+      productService.getLastProductsBeforeDate = jest
+        .fn()
+        .mockRejectedValue(error);
+
+      await expect(
+        productService.didProductsChangeSinceDate(
+          productSnapshot.products,
+          date,
+        ),
+      ).rejects.toThrow(error);
+
+      expect(telegramService.sendErrorMessage).toHaveBeenCalledWith(
+        `Error at analyzing previous snapshot`,
+      );
+    });
+
+    it(`should return false if products didn't change`, async () => {
+      const productService = createProductService(db);
+      const didChange = await productService.didProductsChangeSinceDate(
+        productSnapshot.products,
+        date,
+      );
+      expect(didChange).toEqual(false);
+    });
+
+    it(`should return true if products changed`, async () => {
+      const productService = createProductService(db);
+      const didChange = await productService.didProductsChangeSinceDate(
+        [],
+        date,
+      );
+      expect(didChange).toEqual(true);
     });
   });
 });
