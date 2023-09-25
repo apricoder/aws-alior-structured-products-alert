@@ -115,7 +115,7 @@ describe("ScrapeService", () => {
         );
       });
 
-      it('should extract products from html', async () => {
+      it("should extract products from html", async () => {
         const html = `
           <html>
             <body>
@@ -172,22 +172,26 @@ describe("ScrapeService", () => {
           </html>
         `;
 
-        const productsFromHtml = await scrapeService.extractProductsFromHtml(html);
-        expect(productsFromHtml).toEqual([{
-          productName: "Legit Deal",
-          interestRate: 4.6,
-          currency: "PLN",
-          minAmount: 5000,
-          validUntilDate: new Date("2023-09-29"),
-          detailsUrl: "https://bank.com/legit-deal",
-        }, {
-          productName: "Bucks Saving",
-          interestRate: 3,
-          currency: "USD",
-          minAmount: 5000,
-          validUntilDate: new Date("2023-10-20"),
-          detailsUrl: "https://bank.com/bucks-savings",
-        }])
+        const productsFromHtml =
+          await scrapeService.extractProductsFromHtml(html);
+        expect(productsFromHtml).toEqual([
+          {
+            productName: "Legit Deal",
+            interestRate: 4.6,
+            currency: "PLN",
+            minAmount: 5000,
+            validUntilDate: new Date("2023-09-29"),
+            detailsUrl: "https://bank.com/legit-deal",
+          },
+          {
+            productName: "Bucks Saving",
+            interestRate: 3,
+            currency: "USD",
+            minAmount: 5000,
+            validUntilDate: new Date("2023-10-20"),
+            detailsUrl: "https://bank.com/bucks-savings",
+          },
+        ]);
       });
     });
 
@@ -199,16 +203,16 @@ describe("ScrapeService", () => {
       it("should scrape details url from a link button", () => {
         const url = "https://origin.com/current-path";
         const productElement = parseHtml(`
-        <section class="product-list">
-          <div class="features">
-            <div class="rows">
-              <div class="columns">
-                <a href="/some-relative-path"></a>
+          <section class="product-list">
+            <div class="features">
+              <div class="rows">
+                <div class="columns">
+                  <a href="/some-relative-path"></a>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      `);
+          </section>
+        `);
 
         const result = scrapeService.extractOfferDetailsUrl(
           productElement,
