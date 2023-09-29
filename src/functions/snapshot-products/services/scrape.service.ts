@@ -66,7 +66,9 @@ export class ScrapeService {
         return product;
       });
     } catch (e) {
-      await this.telegramService.sendErrorMessage(`Error at extracting products`);
+      await this.telegramService.sendErrorMessage(
+        `Error at extracting products`,
+      );
       throw e;
     }
   }
@@ -115,11 +117,11 @@ export class ScrapeService {
     const minAmountString =
       minAmountFeatureElement.querySelector("strong").innerText;
     const minAmountRegex = /([\d\s,.]+)\s+(\w+)/;
-    const minAmounMatches = minAmountRegex.exec(minAmountString);
+    const minAmountMatches = minAmountRegex.exec(minAmountString);
     const minAmount = parseFloat(
-      minAmounMatches[1].replace(/\s/g, "").replace(/,/, ""),
+      minAmountMatches[1].replace(/\s/g, "").replace(/,/, ""),
     );
-    const currency = minAmounMatches[2];
+    const currency = minAmountMatches[2];
     return { minAmount, currency };
   }
 
