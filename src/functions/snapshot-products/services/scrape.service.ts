@@ -73,25 +73,29 @@ export class ScrapeService {
     }
   }
 
-  extractValidUntilDate(featureElements: HTMLElement[]): Date {
-    const validUntilFeatureElement = featureElements.find(
-      (fe) => fe.innerText.indexOf("dostępny do") > -1,
-    );
-    const validUntilPolishDateString =
-      validUntilFeatureElement.querySelector("strong").innerText;
-    const validUntilDate = parseDate(
-      validUntilPolishDateString.replace(" r.", ""),
-      "d MMMM yyyy",
-      new Date(),
-      { locale: pl },
-    );
+  extractValidUntilDate(featureElements: HTMLElement[]): Date | undefined {
+    try {
+      const validUntilFeatureElement = featureElements.find(
+        (fe) => fe.innerText.indexOf("dostępny do") > -1,
+      );
+      const validUntilPolishDateString =
+        validUntilFeatureElement.querySelector("strong").innerText;
+      const validUntilDate = parseDate(
+        validUntilPolishDateString.replace(" r.", ""),
+        "d MMMM yyyy",
+        new Date(),
+        {locale: pl},
+      );
 
-    // remove utc offset so that if running from a non-utc timezone would still create a utc-midnight date
-    validUntilDate.setMinutes(
-      validUntilDate.getMinutes() - validUntilDate.getTimezoneOffset(),
-    );
+      // remove utc offset so that if running from a non-utc timezone would still create a utc-midnight date
+      validUntilDate.setMinutes(
+        validUntilDate.getMinutes() - validUntilDate.getTimezoneOffset(),
+      );
 
-    return validUntilDate;
+      return validUntilDate;
+    } catch (e) {
+      console.error(`Error extracting valid until date`);
+    }
   }
 
   extractInterestRate(featureElements: HTMLElement[]): number {

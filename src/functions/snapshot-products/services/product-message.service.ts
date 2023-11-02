@@ -19,9 +19,11 @@ export class ProductMessageService {
   }
 
   getProductSummary(p: Product) {
-    const formattedDate = formatDate(p.validUntilDate, "dd MMMM yyyy", {
-      locale: pl,
-    });
+    const formattedDate =
+      p.validUntilDate &&
+      formatDate(p.validUntilDate, "dd MMMM yyyy", {
+        locale: pl,
+      });
 
     const interestText = `${p.interestRate.toLocaleString("fr-FR", {
       minimumFractionDigits: 2,
@@ -38,7 +40,7 @@ export class ProductMessageService {
       `▪️ *${p.productName}*\n` +
       `• ${interestText} w ${p.currency}\n` +
       `• Minimalna wartość inwestycji: ${minAmountText} ${p.currency}\n` +
-      `• Oferta ważna do ${formattedDate}\n` +
+      (formattedDate ? `• Oferta ważna do ${formattedDate}\n` : ``) +
       `• [Zobacz szczegóły](${p.detailsUrl})\n`
     );
   }
