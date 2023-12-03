@@ -68,8 +68,8 @@ export class ProductsService {
         oldProduct.currency === product.currency &&
         oldProduct.interestRate === product.interestRate &&
         oldProduct.minAmount === product.minAmount &&
-        oldProduct.validUntilDate.getTime() ===
-          product.validUntilDate.getTime(),
+        oldProduct.validUntilDate?.getTime() ===
+          product.validUntilDate?.getTime(),
     );
   }
 
