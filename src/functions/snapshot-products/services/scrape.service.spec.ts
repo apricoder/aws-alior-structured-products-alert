@@ -326,7 +326,7 @@ describe("ScrapeService", () => {
         expect(scrapeService.extractValidUntilDate).toBeDefined();
       });
 
-      it("should extract date from a html containing string date in polish", () => {
+      it("should extract date from a html containing date in polish words", () => {
         const featureElements = [
           detailsLinkFeatureElement,
           parseHtml(`
@@ -338,6 +338,22 @@ describe("ScrapeService", () => {
         ];
 
         const expectedDate = new Date("2023-09-29");
+        const date = scrapeService.extractValidUntilDate(featureElements);
+        expect(date).toEqual(expectedDate);
+      });
+
+      it("should extract date from a html containing string date", () => {
+        const featureElements = [
+          detailsLinkFeatureElement,
+          parseHtml(`
+            <div class="columns">
+              subskrypcja<br>
+              <strong>do 29.12.2023 r.</strong>
+            </div>
+          `),
+        ];
+
+        const expectedDate = new Date("2023-12-29");
         const date = scrapeService.extractValidUntilDate(featureElements);
         expect(date).toEqual(expectedDate);
       });

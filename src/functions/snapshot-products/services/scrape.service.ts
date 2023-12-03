@@ -75,17 +75,28 @@ export class ScrapeService {
 
   extractValidUntilDate(featureElements: HTMLElement[]): Date | undefined {
     try {
-      const validUntilFeatureElement = featureElements.find(
-        (fe) => fe.innerText.indexOf("dostępny do") > -1,
-      );
+      const validUntilFeatureElement = featureElements.find((fe) => {
+        const innerText = fe.innerText
+          ?.replace(/\n/g, " ") // replace line breaks with space
+          ?.replace(/\s{2,}/g, " "); // replace trailing spaces with 1 space
+        return (
+          innerText.indexOf("dostępny do") > -1 ||
+          innerText.indexOf("subskrypcja do ") > -1
+        );
+      });
       const validUntilPolishDateString =
         validUntilFeatureElement.querySelector("strong").innerText;
-      const validUntilDate = parseDate(
-        validUntilPolishDateString.replace(" r.", ""),
-        "d MMMM yyyy",
-        new Date(),
-        {locale: pl},
+      const dateFromDateWords = this.tryExtractDateFromPolishWords(
+        validUntilPolishDateString,
       );
+
+      const dateFromDateString = this.tryExtractDateFromDateString(
+        validUntilPolishDateString,
+      );
+
+      const validUntilDate = isNaN(dateFromDateWords as any)
+        ? dateFromDateString
+        : dateFromDateWords;
 
       // remove utc offset so that if running from a non-utc timezone would still create a utc-midnight date
       validUntilDate.setMinutes(
@@ -96,6 +107,25 @@ export class ScrapeService {
     } catch (e) {
       console.error(`Error extracting valid until date`);
     }
+  }
+
+  private tryExtractDateFromPolishWords(validUntilPolishDateString: string) {
+    const validUntilDate = parseDate(
+      validUntilPolishDateString.replace(" r.", ""),
+      "d MMMM yyyy",
+      new Date(),
+      { locale: pl },
+    );
+    return validUntilDate;
+  }
+
+  private tryExtractDateFromDateString(validUntilPolishDateString: string) {
+    const validUntilDate = parseDate(
+      validUntilPolishDateString.replace(" r.", "").replace(/[^0-9.]/g, ""),
+      "dd.MM.yyyy",
+      new Date(),
+    );
+    return validUntilDate;
   }
 
   extractInterestRate(featureElements: HTMLElement[]): number {
