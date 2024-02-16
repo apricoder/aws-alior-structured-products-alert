@@ -40,7 +40,7 @@ export class ScrapeService {
       return productsListElements.map((productElement) => {
         const productName = productElement.querySelector("h2").innerText.trim();
         const featureElements = productElement.querySelectorAll(
-          ".features .row .columns",
+          ".features .row .columns, .features .flex-row .flex-columns",
         );
 
         const validUntilDate = this.extractValidUntilDate(featureElements);
