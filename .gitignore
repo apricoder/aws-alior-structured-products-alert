@@ -15,4 +15,4 @@ jspm_packages
 coverage/
 
 # env
-.env.development
+.env

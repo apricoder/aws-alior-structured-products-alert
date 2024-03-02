@@ -10,6 +10,7 @@ const serverlessConfiguration: AWS = {
     "serverless-offline",
     "serverless-dotenv-plugin",
   ],
+  useDotenv: true,
   provider: {
     name: "aws",
     runtime: "nodejs14.x",
@@ -51,7 +52,7 @@ const serverlessConfiguration: AWS = {
     apiKeys: [
       {
         name: "api-key",
-        value: "x11HjN12FVvL3nRequgo",
+        value: "${env:API_KEY}",
       },
     ],
   },
